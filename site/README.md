@@ -25,7 +25,7 @@ npx --no-install playwright test
 ```
 
 `node site/build.mjs` defaults to `/` for a Sites preview. The output is always
-`site-dist/`; it is ignored by Git and excluded from the skill npm package.
+`dist/`; it is ignored by Git and excluded from the skill npm package.
 `node site/serve.mjs` serves the canonical subpath locally on
 `http://127.0.0.1:4173/mAI-skills/`. Stop the process when finished.
 
@@ -82,7 +82,7 @@ real credentials to fixtures. Keep any test output/screenshots outside commits.
 `/mAI-skills/`, runs the documentation and root package checks, and verifies
 desktop/mobile interactions and accessibility. The existing Validate Skills
 workflow continues running the Python and R offline tests independently.
-Only the explicit `site-dist/` output is uploaded to Pages.
+Only the explicit `dist/` output is uploaded to Pages.
 
 PRs cannot deploy. Publication runs after checks on `main`; a release refreshes
 documentation from `main`, rather than reverting the site to an older tag.
@@ -103,7 +103,7 @@ for Pages permissions, artifacts and environment protection.
 
 Build from the final pushed Git commit with `SITE_PREVIEW=1` and the default
 root base path. Use the Sites source workflow helper to push that exact commit
-to the persisted project's configured source branch and package `site-dist/`.
+to the persisted project's configured source branch and package `dist/`.
 Save/deploy through the owner-private native operation. Verify its terminal
 success and `get_site` access policy; never use a public audience operation.
 The helper's pushed commit must match the GitHub PR head and the build metadata.

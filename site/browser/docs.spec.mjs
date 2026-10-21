@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
 const root='http://127.0.0.1:4173';
-const search=JSON.parse(await readFile(new URL('../../site-dist/search-index.json',import.meta.url),'utf8'));
+const search=JSON.parse(await readFile(new URL('../../dist/search-index.json',import.meta.url),'utf8'));
 
 test('all 37 pages work on desktop and mobile, with no overflow or axe violations', async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));

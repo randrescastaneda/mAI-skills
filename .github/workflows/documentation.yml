@@ -61,7 +61,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: site-dist
+          path: dist
 
   deploy:
     name: Publish canonical documentation

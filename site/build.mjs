@@ -86,7 +86,7 @@ export async function checkOutput(directory, base) {
   return files.length;
 }
 
-export async function build({base = process.env.DOCS_BASE_PATH ?? '/', output = path.join(ROOT, 'site-dist')} = {}) {
+export async function build({base = process.env.DOCS_BASE_PATH ?? '/', output = path.join(ROOT, 'dist')} = {}) {
   base = normalizeBase(base);
   const reference = await collectReference();
   const guides = JSON.parse(await readFile(path.join(ROOT, 'site/guides.json'), 'utf8'));
