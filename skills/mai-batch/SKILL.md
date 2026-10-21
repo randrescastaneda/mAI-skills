@@ -192,8 +192,8 @@ approved VPN/network routes, permissions, and data controls enabled.
 
 ## Sources
 
-- Reference data: `docs/mai-factory-builder.md` and
-  `docs/mai-factory-builder.agent.md`. The legacy lifecycle has an endpoint mismatch.
+- Historical sources (not bundled): `mai-factory-builder.md` and
+  `mai-factory-builder.agent.md`. The legacy lifecycle has an endpoint mismatch.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

@@ -72,5 +72,5 @@ Send only a sanitized error summary, UTC time, request ID, environment, runtime,
 and cluster/workspace identifier permitted by policy to the Data Science team.
 Platform support: `itsai_platform_admin@worldbankgroup.org`.
 
-Source: `docs/mai-factory-builder.md`, Databricks Access section. Current
-workspace instructions take priority over this source snapshot.
+Historical source (not bundled): `mai-factory-builder.md`, Databricks Access
+section. Current workspace instructions take priority over this source snapshot.
