@@ -36,6 +36,33 @@ keyboard, focus restoration, mobile menu, and clipboard content. Automated
 accessibility checks complement visual and keyboard review; they are not a
 certification or a live mAI integration test.
 
+## Color palette
+
+The website uses named colors from the World Bank's
+[wbplot palette definitions](https://github.com/worldbank/wbplot/blob/900e68d8b24d9ff0143215e68f42b98c262e825d/data-raw/wb-colors.json),
+read alongside its WBCOLORS preparation script and palette documentation.
+The source revision is pinned here so later changes can be reviewed deliberately.
+This palette adaptation does not imply institutional endorsement; the favicon
+and wordmark remain the project's own design.
+
+| Website role | wbplot key | Hex |
+| --- | --- | --- |
+| Brand, active navigation and hover | corporate | #004972 |
+| Primary controls and light-surface focus | selection1 | #0071BC |
+| Links and emphasis | cat1Text | #106CA1 |
+| Code and terminal backgrounds | seqB5 / total | #023B6F / #163C6C |
+| Pale blue surface | seqB1 | #E3F6FD |
+| Neutral surfaces and borders | grey100 / grey200 / grey300 | #EBEEF4 / #CED4DE / #8A969F |
+| Body and secondary text | text / textSubtle | #111111 / #666666 |
+| Bright decorative and dark-surface focus accents | cat1 / seqB2 / cat2 | #34A7F2 / #75CCEC / #FF9800 |
+| Text selection and editorial badge | oldestAge / seqY1 | #A1C6FF / #FDF7DB |
+
+White is the neutral canvas. Shadow colors use opacity of the sourced navy.
+Bright categorical colors are accents; normal text and controls use darker
+palette values. White text on the primary blue has 5.14:1 contrast; normal
+body text on white has 18.88:1. The inset code-focus ring has 4.28:1 contrast
+against its navy background, and cannot be clipped by the code container.
+
 ## Automatic reference versus editorial guides
 
 `public-sources.json` is the explicit reviewed publication allowlist. All nine
