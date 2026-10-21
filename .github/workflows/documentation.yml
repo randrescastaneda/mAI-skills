@@ -1,0 +1,82 @@
+name: Documentation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: documentation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, privacy, drift, links and accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'release' && 'main' || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            site/package-lock.json
+      - name: Install build and test dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefix site
+      - name: Validate the plugin package
+        run: npm run validate && npm test
+      - name: Require reviewed generated references in pull requests
+        if: github.event_name == 'pull_request'
+        run: node site/generate.mjs --check
+      - name: Generate current references on source updates and releases
+        run: node site/generate.mjs
+      - name: Test publication boundaries and drift detection
+        run: npm test --prefix site
+      - name: Build and check root deployment
+        run: node site/build.mjs
+      - name: Build and check canonical GitHub Pages path
+        run: node site/build.mjs
+        env:
+          DOCS_BASE_PATH: /mAI-skills/
+      - name: Install test browser
+        working-directory: site
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Desktop, mobile, keyboard, search, copy and axe checks
+        working-directory: site
+        run: npx --no-install playwright test
+      - name: Upload reviewed static output
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site-dist
+
+  deploy:
+    name: Publish canonical documentation
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy through the existing protected Pages environment
+        id: deployment
+        uses: actions/deploy-pages@v4

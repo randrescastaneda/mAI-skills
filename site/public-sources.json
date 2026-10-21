@@ -1,0 +1,28 @@
+{
+  "description": "Reviewed public reference inputs. New files require explicit publication review. Original docs/ source inputs and SOURCES.md are excluded.",
+  "files": [
+    "skills/mai-batch/SKILL.md",
+    "skills/mai-batch/references/access-and-verification.md",
+    "skills/mai-batch/scripts/validate_jsonl.py",
+    "skills/mai-credentials/SKILL.md",
+    "skills/mai-credentials/references/storage.md",
+    "skills/mai-credentials/scripts/store_credentials.py",
+    "skills/mai-databricks/SKILL.md",
+    "skills/mai-factory/SKILL.md",
+    "skills/mai-factory/references/source-rules.md",
+    "skills/mai-foundation-models/SKILL.md",
+    "skills/mai-foundation-models/references/access-and-verification.md",
+    "skills/mai-platform-apis/SKILL.md",
+    "skills/mai-platform-apis/references/access-and-verification.md",
+    "skills/mai-python/SKILL.md",
+    "skills/mai-python/assets/.env.example",
+    "skills/mai-python/assets/desktop-index.toml",
+    "skills/mai-python/assets/mai_client.py",
+    "skills/mai-python/references/setup.md",
+    "skills/mai-r/SKILL.md",
+    "skills/mai-r/assets/mai_client.R",
+    "skills/mai-r/references/migration.md",
+    "skills/mai-troubleshooting/SKILL.md",
+    "skills/mai-troubleshooting/references/access-and-verification.md"
+  ]
+}

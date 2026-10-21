@@ -100,6 +100,11 @@ material.
 
 ## Skill Catalog
 
+Browse the [documentation website](https://randrescastaneda.github.io/mAI-skills/)
+for installation choices, worked workflows, troubleshooting, and a complete
+source-generated reference. See [site/README.md](site/README.md) for the static
+build, publication allowlist, drift checks, and protected Pages deployment.
+
 | Skill | Use it for |
 | --- | --- |
 | [mai-factory](skills/mai-factory/SKILL.md) | Onboarding, access selection, environment matching, first connection |
