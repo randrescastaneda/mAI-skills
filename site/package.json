@@ -1,0 +1,16 @@
+{
+  "name": "mai-skills-documentation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "check": "node generate.mjs --check",
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "marked": "18.1.1"
+  }
+}

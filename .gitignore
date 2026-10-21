@@ -12,3 +12,8 @@ __pycache__/
 .Rhistory
 .RData
 .DS_Store
+site-dist/
+site-preview-dist/
+site/test-results/
+site/playwright-report/
+dist/
