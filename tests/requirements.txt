@@ -1,0 +1,2 @@
+# Pin the real SDK contract test; runtime examples use the same tested release.
+openai==3.35.1

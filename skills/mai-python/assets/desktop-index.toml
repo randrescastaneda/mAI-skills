@@ -1,0 +1,9 @@
+# Merge these entries into the user's pyproject.toml; never add credentials.
+[[tool.uv.index]]
+name = "itsai"
+url = "https://artifactory.worldbank.org/artifactory/api/pypi/itsdt-pypi-virtual/simple"
+explicit = true
+authenticate = "always"
+
+[tool.uv.sources]
+itsai-platform = { index = "itsai" }

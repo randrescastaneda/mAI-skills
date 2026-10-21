@@ -1,0 +1,13 @@
+/.luarc.json
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.tgz
+.env
+.env.*
+!.env.example
+.Renviron
+.Rhistory
+.RData
+.DS_Store
