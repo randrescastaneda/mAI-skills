@@ -1,6 +1,7 @@
 # Verify the API Contract
 
-The supplied source files are not one consistent API specification.
+The historical sources used to build these skills are not one consistent API
+specification. The builder guides are not included in this repository.
 `mai-factory-builder.agent.md` describes older routes below
 `/conversationalai/maifactory`. `mai-factory-builder.md` describes newer
 foundation routes below `/maifactory` and requires current documentation search.

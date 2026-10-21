@@ -1,6 +1,6 @@
 # Source Inventory and Decisions
 
-Reviewed on 2026-10-21. This is a record of the local source documents used
+Reviewed on 2026-10-21. This is a record of the historical source documents used
 to build the skills, not a claim that live mAI endpoints were verified.
 All implementation work is in `mAI-skills`; no source project was changed.
 
@@ -9,7 +9,7 @@ All implementation work is in `mAI-skills`; no source project was changed.
 The source project is `GPID/Pip-Technical-Guidelines` in the local project
 collection, with upstream [GPID-WB/Pip-Technical-Guidelines](https://github.com/GPID-WB/Pip-Technical-Guidelines).
 A recursive search found exactly four `mAI*.qmd` files, all at its root.
-All four files and both local `docs/` files were read in full.
+All four files and both builder guides listed below were read in full.
 
 | Source | Lines | Main coverage | Skills informed |
 | --- | --- | --- | --- |
@@ -17,24 +17,24 @@ All four files and both local `docs/` files were read in full.
 | `mAI_factory_setup_access_request.qmd` | 51 | Per-user onboarding, form selections, IFC and Connect exceptions | Factory, credentials, R |
 | `mAI_factory_environment_setup.qmd` | 315 | Artifactory token steps, private index, DesktopToken, health, older Azure client, environment persistence | Factory, credentials, Python, R, troubleshooting |
 | `mAI_integration.qmd` | 202 | R/Shiny on internal Posit Connect, content OAuth, audit headers, older Azure chat request | Factory, credentials, R, troubleshooting |
-| `docs/mai-factory-builder.agent.md` | 1,474 | Desktop/Application Access, models, Responses, embeddings, batch, Gemini, Claude, DNR, task APIs, FAQ | All API and troubleshooting skills |
-| `docs/mai-factory-builder.md` | 318 | New route discovery, current-documentation requirement, team header, Databricks provisioning | All skills |
+| `mai-factory-builder.agent.md` | 1,474 | Desktop/Application Access, models, Responses, embeddings, batch, Gemini, Claude, DNR, task APIs, FAQ | All API and troubleshooting skills |
+| `mai-factory-builder.md` | 318 | New route discovery, current-documentation requirement, team header, Databricks provisioning | All skills |
 
 The original spelling `prerequisities` is retained to identify the source.
-The R article declares 2026-06-09. The local `docs/` files do not establish
+The R article declares 2026-06-09. The builder guides do not establish
 their publication sequence; "new-route guide" below identifies its content,
 not a verified platform release date. References in skills use source names
 and live documentation links so each installed skill remains self-contained.
 
-The two pre-existing `docs/` inputs remain unchanged. The npm package excludes
-them. The derived skills do not repeat their entire text or make a new license
-claim about Bank documentation.
+The two builder guides are historical inputs and are not stored in this
+repository. The derived skills do not repeat their entire text or make a new
+license claim about Bank documentation.
 
 ## Authority and Conflicts
 
 | Topic and source evidence | Decision in the skills |
 | --- | --- |
-| `mai-factory-builder.agent.md:19-23` treats its embedded examples as authoritative; `mai-factory-builder.md:18-32,90-92` requires current indexed documentation | Treat local files as source snapshots. Verify current route, schema, environment, headers, SDK/version, and response before invocation code. If unavailable, prepare offline scaffolds and request a non-secret authoritative excerpt |
+| `mai-factory-builder.agent.md:19-23` treats its embedded examples as authoritative; `mai-factory-builder.md:18-32,90-92` requires current indexed documentation | Treat these documents as source snapshots. Verify current route, schema, environment, headers, SDK/version, and response before invocation code. If unavailable, prepare offline scaffolds and request a non-secret authoritative excerpt |
 | PIP environment `:165-200` and R `:121-169` use Azure deployment chat completions; builder guides list different Responses roots | Do not mix Azure chat payloads, Responses parsing, and different route roots. Require explicit verified SDK base/full R URL |
 | New-route guide `:74-107` separates foundation `/maifactory` from `/conversationalai/platform` | Preserve platform prefix. Do not remove `/conversationalai` from every route |
 | Older guide Gemini `:88-105,238-278` uses Interactions; new-route guide `:99` lists Generate Content | Do not present Interactions as the universal current API; verify native contract and SDK before use |

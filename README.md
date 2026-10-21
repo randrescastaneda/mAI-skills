@@ -162,9 +162,8 @@ before making changes.
   its policy before use. Its documented opt-outs are `DISABLE_TELEMETRY=1` or
   `DO_NOT_TRACK=1`, set in the user's environment.
 
-See [SOURCES.md](SOURCES.md) for the complete source inventory and conflict
-decisions. Source documents in `docs/` are reference inputs, not automatically
-discovered skills, and are not included in the npm distribution.
+See [SOURCES.md](SOURCES.md) for the historical source inventory and conflict
+decisions. The original source documents are not stored in this repository.
 
 ## Updates and Removal
 

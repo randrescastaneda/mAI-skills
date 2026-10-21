@@ -223,8 +223,8 @@ limits, or use a public provider as an access workaround.
 
 ## Sources
 
-- Reference data: `docs/mai-factory-builder.md` and
-  `docs/mai-factory-builder.agent.md`. Legacy payloads need current verification.
+- Historical sources (not bundled): `mai-factory-builder.md` and
+  `mai-factory-builder.agent.md`. Legacy payloads need current verification.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

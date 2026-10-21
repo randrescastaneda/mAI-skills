@@ -231,8 +231,8 @@ needs independent review before official use.
 
 ## Sources
 
-- Reference data: `docs/mai-factory-builder.md` and
-  `docs/mai-factory-builder.agent.md`. Their routes, catalogs, and code conflict.
+- Historical sources (not bundled): `mai-factory-builder.md` and
+  `mai-factory-builder.agent.md`. Their routes, catalogs, and code conflict.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.
