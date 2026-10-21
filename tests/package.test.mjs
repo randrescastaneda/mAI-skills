@@ -28,7 +28,7 @@ async function fixture(t) {
   return root;
 }
 
-test('package metadata supports private Git distribution without install hooks', async () => {
+test('package metadata supports Git distribution without registry publication or install hooks', async () => {
   const pkg = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
   assert.equal(pkg.name, '@randrescastaneda/mai-skills');
   assert.equal(pkg.version, '0.1.0');
@@ -44,6 +44,16 @@ test('package metadata supports private Git distribution without install hooks',
     'mai-factory', 'mai-credentials', 'mai-python', 'mai-r', 'mai-foundation-models',
     'mai-platform-apis', 'mai-batch', 'mai-databricks', 'mai-troubleshooting',
   ]);
+});
+
+test('installation guidance uses public HTTPS access and separates it from mAI approval', async () => {
+  const readme = await readFile(path.join(ROOT, 'README.md'), 'utf8');
+  const pkg = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
+  assert.match(readme, /The repository is \*\*public\*\*/);
+  assert.doesNotMatch(readme, /repository is (?:currently )?\*\*private\*\*/i);
+  assert.ok(readme.includes(`npm install --save-dev skills@1.7.4 ${pkg.repository.url}`));
+  assert.match(readme, /mAI Factory services remain restricted/);
+  assert.match(readme, /This npm setting does not make the GitHub repository private/);
 });
 
 test('repository skills pass validation', async () => {

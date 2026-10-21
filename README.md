@@ -41,11 +41,13 @@ installation is the default. Add `--copy` if your system does not permit
 symlinks. Each skill includes its own required references and assets; installing
 one skill does not require the other eight.
 
-The repository is currently **private**. Staff need read access and working Git
-authentication. Ask the repository owner for access. Use approved Git/GitHub
-credential setup, not a token embedded in an install URL. The `skills` CLI can
-use configured Git, GitHub CLI, or SSH access. Installing from a private source
-does not give other staff repository permissions.
+The repository is **public**. No GitHub account, invitation, or access token is
+required to download these skills over HTTPS. Do not put credentials in an
+installation URL.
+
+mAI Factory services remain restricted. Downloading these skills does not grant
+platform access. The relevant onboarding or content-integration approval,
+World Bank credentials, and approved network access are still required.
 
 ## Install with npm
 
@@ -53,11 +55,12 @@ No npm registry publication is required. Install the skill package directly
 from this GitHub repository, then link its bundled skills to your agent:
 
 ```bash
-npm install --save-dev skills@1.7.4 github:randrescastaneda/mAI-skills
+npm install --save-dev skills@1.7.4 git+https://github.com/randrescastaneda/mAI-skills.git
 npx skills experimental_sync --agent claude-code --yes
 ```
 
-The package name is `@randrescastaneda/mai-skills`. It has no runtime
+The explicit HTTPS source supports installation without GitHub authentication
+or SSH keys. The package name is `@randrescastaneda/mai-skills`. It has no runtime
 dependencies or automatic install scripts. The explicit sync command is
 required: `npm install` alone does not activate skills in a coding agent.
 `experimental_sync` is an upstream experimental command, pinned here through
@@ -85,9 +88,15 @@ npx skills experimental_sync --agent claude-code --yes
 
 This requires a trusted copy of the package and access to the npm dependencies
 or an approved package cache. It is not a fully offline dependency installer.
-The package is marked `private: true` to prevent accidental registry publication.
-Repository access and approved redistribution terms still apply; this project
-does not grant an open-source license to the supplied source material.
+The package is marked `private: true` to prevent accidental npm registry
+publication. This npm setting does not make the GitHub repository private or
+block installation from GitHub or a `.tgz` file. The package has not been
+published to the npm registry; use the GitHub command above rather than
+`npm install @randrescastaneda/mai-skills`.
+
+Public repository access does not change the applicable redistribution terms;
+this project does not grant an open-source license to the supplied source
+material.
 
 ## Skill Catalog
 
