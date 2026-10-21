@@ -1,0 +1,30 @@
+{
+  "name": "@randrescastaneda/mai-skills",
+  "version": "0.1.0",
+  "description": "Reusable World Bank mAI skills for coding agents.",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/randrescastaneda/mAI-skills.git"
+  },
+  "files": [
+    "skills/",
+    "README.md",
+    "SOURCES.md",
+    "!skills/**/__pycache__/**",
+    "!skills/**/*.pyc",
+    "!skills/**/*.pyo"
+  ],
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "test": "node --test tests/package.test.mjs"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
+  }
+}
