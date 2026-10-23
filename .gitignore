@@ -17,3 +17,4 @@ site-preview-dist/
 site/test-results/
 site/playwright-report/
 dist/
+reference/

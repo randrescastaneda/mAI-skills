@@ -90,9 +90,10 @@ build the page. `build-info.json` records that commit and the reference digest.
 Only generated HTML, three maintained browser assets, search data, build
 provenance, and `.nojekyll` enter the static output. The build starts from an
 empty output directory. It does not copy the repository, `docs/` builder inputs,
-`SOURCES.md`, tests, manuscripts, internal notes, environment files, installed
-dependencies, Git metadata, hosting identity, logs, or user data. The blank
-reviewed `.env.example` appears as escaped reference text only. Support aliases
+`reference/` migration inputs, `SOURCES.md`, tests, manuscripts, internal notes,
+environment files, installed dependencies, Git metadata, hosting identity, logs,
+or user data. The reviewed non-secret `.env.example` appears as escaped
+reference text only. Support aliases
 and environment configuration copied from reviewed skills are intentionally
 documented; no private account contact details are included.
 
