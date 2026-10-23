@@ -1,5 +1,5 @@
 {
-  "description": "Reviewed public reference inputs. New files require explicit publication review. Original docs/ source inputs and SOURCES.md are excluded.",
+  "description": "Reviewed public reference inputs. New files require explicit publication review. Original docs/ and reference/ migration inputs and SOURCES.md are excluded.",
   "files": [
     "skills/mai-batch/SKILL.md",
     "skills/mai-batch/references/access-and-verification.md",

@@ -168,7 +168,7 @@ function validateSecrets(content, report) {
     if (pattern.test(content)) report(`possible ${label}; remove it or use a placeholder`);
   }
   // Only long literal values in credential fields; environment lookups and placeholders do not match.
-  const assignments = /["']?(?:api[_-]?key|apim[_-]?subscription[_-]?key|ocp-apim-subscription-key|access[_-]?token|client[_-]?secret|password)["']?\s*[:=]\s*["']([A-Za-z0-9+/=._~-]{32,})["']/gi;
+  const assignments = /["']?(?:api[_-]?key|apim[_-]?subscription[_-]?key|ocp-apim-subscription-key|access[_-]?token|jfrog[_-]?token|token|client[_-]?secret|password)["']?\s*[:=]\s*["']([A-Za-z0-9+/=._~-]{32,})["']/gi;
   for (const match of content.matchAll(assignments)) {
     if ((/[a-z]/.test(match[1]) && /[A-Z]/.test(match[1]) && /[0-9]/.test(match[1]))
       || /^[a-f0-9]{32,}$/i.test(match[1])) {

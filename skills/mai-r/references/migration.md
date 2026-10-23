@@ -2,9 +2,11 @@
 
 The PIP R article (dated 2026-06-09) uses Connect content OAuth, `httr::POST`,
 and DEV Azure deployment chat completions with `api-version=2025-04-01-preview`.
-Its response extraction is `choices[[1]]$message$content`. The newer source
-guide lists root `/maifactory/openai/responses` but does not supply a current
-invocation specification. Do not mix these contracts.
+Its response extraction is `choices[[1]]$message$content`. The supplied endpoint
+migration guide resolves the target to root `/maifactory/openai/responses`.
+Use `instructions` and `input`, put the model in JSON, and extract non-empty
+`output_text` or text from `output[].content[].text`. Do not mix these contracts
+or use the retired foundation root below `/conversationalai/maifactory`.
 
 ## Migration Checklist
 
@@ -12,7 +14,7 @@ invocation specification. Do not mix these contracts.
    version, model/deployment name, audit headers, and response shape.
 2. Verify the target contract and authorization in current platform docs.
 3. Keep credential acquisition separate from the request builder. Preserve
-   Connect OAuth when that is the approved identity path.
+    Connect OAuth when that is the approved identity path.
 4. Update payload fields and parsing together. Chat uses `messages`/`choices`;
    Responses uses `input`/structured `output`. Model token-limit parameters
    can differ. An endpoint change alone is not a migration.
@@ -23,6 +25,21 @@ invocation specification. Do not mix these contracts.
    reactive has no refresh invalidation and is not a durable token provider.
 8. Do not display raw HTTP error bodies in a Shiny notification. Show a safe
    message and retain only approved diagnostic fields.
+
+## Desktop WAM Migration
+
+Local Desktop acquisition now uses the approved current private SDK and WAM
+setup under **Desktop Access** in current platform documentation. Use
+`DesktopToken().get_token(env="DEV")`, `QA`, or `PROD`, not the retired
+`_DESKTOP` suffix. No exact SDK release or supported OS list was supplied.
+Do not add device-code, MSAL device flow, or InteractiveBrowserCredential
+fallback. Application, Connect, and Databricks identity flows do not change.
+
+The Desktop cutoff is **November 30, 2026**; the monthly limit is **50 million
+tokens**. Contact `itsai_platform_admin@worldbankgroup.org` for extensions.
+Tokens last about one hour. Reacquire before raw HTTP requests, or refresh and
+rebuild clients that capture a string. A callable hook must be supported by the
+installed client; the tested OpenAI Python hook does not establish ellmer support.
 
 ## ellmer
 

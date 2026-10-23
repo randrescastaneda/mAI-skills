@@ -12,7 +12,7 @@ export function auditText(text, file) {
     /\b(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}|sk-(?:proj-)?[A-Za-z0-9_-]{32,}|(?:AKIA|ASIA)[A-Z0-9]{16})\b/,
     /(?:\/Users\/|\/home\/|[A-Z]:\\Users\\)/,
     /https?:\/\/[^\s<>"']*[?&](?:sig|token|access_token|key)=[^\s<>"']+/i,
-    /(?:api[_-]?key|apim[_-]?subscription[_-]?key|client[_-]?secret|password|access[_-]?token)["']?\s*[:=]\s*["'][A-Za-z0-9+/=._~-]{32,}["']/i,
+    /(?:api[_-]?key|apim[_-]?subscription[_-]?key|client[_-]?secret|password|access[_-]?token|jfrog[_-]?token|token)["']?\s*[:=]\s*["'][A-Za-z0-9+/=._~-]{32,}["']/i,
     /<\/?(?:script|iframe|object|embed)\b/i,
   ];
   if (rules.some(rule => rule.test(text))) throw new Error(`Publication audit failed: ${file} (sensitive or active content; values withheld)`);

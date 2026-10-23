@@ -1,6 +1,6 @@
 ---
 name: mai-r
-description: Connect R and Shiny to World Bank mAI Factory. Use for Posit Connect content OAuth, connectapi, API_KEY/OAUTH_INTEGRATION_GUID, R Desktop authentication, httr2 requests, ellmer migration, secure keyring storage, or token expiry in Shiny.
+description: Connect R and Shiny to World Bank mAI Factory. Use for WAM or device-code migration, Posit Connect content OAuth, connectapi, API_KEY/OAUTH_INTEGRATION_GUID, R Desktop authentication, httr2 requests, ellmer migration, secure keyring storage, or token expiry in Shiny.
 ---
 
 # R and Shiny
@@ -97,6 +97,12 @@ Use intranet search, if available, filtered to
 If current documentation is unavailable, request a non-secret excerpt or
 contact support. Do not change only the URL of the legacy chat example.
 
+The migration guide resolves the full DEV Responses URL to
+`https://azapimdev.worldbank.org/maifactory/openai/responses`. Use the matching
+QA or PROD host only with approval. The model goes in JSON, not the URL.
+Health stays under `/conversationalai/platform/health/`; do not strip that
+prefix globally. Preserve Connect content OAuth and its permissions.
+
 After verification, set `MAI_RESPONSES_URL` and `MAI_MODEL` as non-secret
 content configuration, then test with public sample text:
 
@@ -105,17 +111,28 @@ config <- mai_config()
 text <- mai_ask(config, provider, "Explain the World Bank mission in one sentence.")
 ```
 
-The starter accepts the two supplied source route families only on the matched
-Bank host, requires an explicit URL, sends a bounded Responses request, and
-parses Responses text blocks. It does not assume `choices[[1]]` for Responses.
-It does not prove that either supplied route is currently enabled.
+The starter accepts only the canonical root Responses route on the matched
+Bank host and requires an explicit URL. It sends a bounded Responses request
+and reads non-empty `output_text` or structured `output` text blocks. It does
+not use `choices[[1]]` for Responses. No live endpoint access was verified.
+Omit GPT-5 `temperature`; use output-token and reasoning controls only when
+supported by the selected model. Preserve existing prompts, models, and logic.
 
 ## Local R Desktop
 
-The local route requires Desktop approval, a compatible private SDK, approved
-network/VPN, and browser login. The PIP source specifies Python no later than
-3.12. Follow the approved uv/private-index instructions and bind `reticulate`
-to that environment **before** Python initializes:
+The local route requires Desktop approval, the approved current private SDK,
+approved network/VPN, and Web Access Management (WAM) setup from **Desktop
+Access** in current platform documentation. The material does not state an exact SDK release,
+supported OS list, or OS-specific WAM settings. Older Python 3.12 guidance is
+not proof of current WAM compatibility. Follow the approved private-index
+instructions and bind `reticulate` to that environment before Python initializes.
+
+For an existing uv environment, upgrade through the approved private index
+with `uv lock --upgrade-package itsai-platform` and `uv sync` before starting
+R/Python. Confirm the release against current Desktop Access requirements;
+repeating `uv add` can retain an old lock.
+
+Then configure the R Desktop provider:
 
 ```r
 install.packages("reticulate")
@@ -126,6 +143,16 @@ config <- mai_config()
 provider <- mai_token_provider(config)
 ```
 
+The provider uses `DesktopToken().get_token(env="DEV")`, `QA`, or `PROD`, not
+retired names with `_DESKTOP` suffixes or an SDK `token_provider` method. Do
+not add device-code, MSAL device flow, or `InteractiveBrowserCredential`
+fallback. The final migration cutoff is **November 30, 2026**. Desktop Access
+has a **50 million token monthly limit**; ask
+`itsai_platform_admin@worldbankgroup.org` for extensions.
+
+Tokens last about one hour. The R HTTP wrapper obtains a provider result for
+each request. A client that captures a string must be rebuilt after refresh;
+do not assume that a static bearer or a cached reactive refreshes itself.
 No persistent public provider API key is needed. Do not save the Desktop
 bearer in `.Renviron`. If a documented legacy workflow needs manual storage,
 use an approved encrypted OS `keyring` backend and hidden `key_set()` prompt
@@ -141,4 +168,7 @@ only status/request ID/time, not bearer tokens, Connect keys, full errors,
 source data, or generated content. Support: `itsai_platform_admin@worldbankgroup.org`.
 
 Sources: PIP `mAI_integration.qmd`, `mAI_factory_setup_access_request.qmd`,
-`mAI_factory_environment_setup.qmd`, and both supplied builder guides.
+`mAI_factory_environment_setup.qmd`, historical builder guides, and the
+2026-10-23 Desktop migration notice and endpoint/auth migration guide. These
+source inputs are not distributed. Never copy credentials, personal data,
+source cells, or outputs from the supplied notebook export into project files.

@@ -20,7 +20,9 @@ async function fixture(t) {
 test('publication audit rejects secrets and personal paths without echoing them', () => {
   for (const value of ['ghp_' + 'a'.repeat(36), '/Users/PRIVATE_PERSON/work',
     'someone@private.example', 'https://host.example/?sig=SECRET',
-    'api_key = "' + 'aB3'.repeat(12) + '"', '<script>alert(1)</script>']) {
+    'api_key = "' + 'aB3'.repeat(12) + '"',
+    'token = "' + 'aB3'.repeat(16) + '"',
+    'JFROG_TOKEN = "' + 'aB3'.repeat(16) + '"', '<script>alert(1)</script>']) {
     assert.throws(() => auditText(value, 'fixture'), e => !e.message.includes(value));
   }
   assert.doesNotThrow(() => auditText('APIM_SUBSCRIPTION_KEY=\nitsai_platform_admin@worldbankgroup.org\napi_key=token_provider', 'fixture'));
@@ -33,6 +35,22 @@ test('reference covers all installed skill resources and rejects unreviewed addi
   assert.equal(reference.files.length, 23);
   await writeFile(path.join(dir, 'skills/mai-factory/private-notes.md'), 'Not public');
   await assert.rejects(collectReference(dir), /not reviewed/);
+});
+
+test('private migration inputs stay outside the website publication boundary', async t => {
+  const dir = await fixture(t);
+  const source = 'reference/maifactory-endpoint-migration/mai-factory-sdk-desktop.ipynb';
+  await mkdir(path.join(dir, path.dirname(source)), {recursive: true});
+  const marker = 'Private notebook fixture, not for publication';
+  await writeFile(path.join(dir, source), marker);
+  const reference = await collectReference(dir);
+  assert.ok(reference.files.every(file => file.file.startsWith('skills/')));
+  assert.ok(!JSON.stringify(reference).includes(marker));
+  const policyFile = path.join(dir, 'site/public-sources.json');
+  const policy = JSON.parse(await readFile(policyFile, 'utf8'));
+  policy.files.push(source);
+  await writeFile(policyFile, JSON.stringify(policy));
+  await assert.rejects(collectReference(dir), /Invalid public source path/);
 });
 
 test('publication rejects symlinks and detects source drift', async t => {

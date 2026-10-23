@@ -1,6 +1,6 @@
 ---
 name: mai-credentials
-description: Obtain and protect World Bank mAI Factory credentials. Use for API keys, APIM subscription keys, bearer tokens, JFrog tokens, Azure app credentials, keyring, environment files, Azure Key Vault, rotation, or accidental credential disclosure.
+description: Obtain and protect World Bank mAI Factory credentials. Use for WAM or device-code migration, DesktopToken, API keys, APIM subscription keys, bearer tokens, JFrog tokens, Azure app credentials, keyring, environment files, Azure Key Vault, rotation, or accidental credential disclosure.
 ---
 
 # mAI Credentials
@@ -12,7 +12,7 @@ Never ask a user to paste a secret into agent chat or an agent tool call.
 
 | Item | Issuer / approved acquisition | Purpose |
 | --- | --- | --- |
-| Desktop bearer token | Approved onboarding, then browser login with `itsai-platform` `DesktopToken` | Short-lived access to mAI; normally no static API key to manage |
+| Desktop bearer token | Approved onboarding and WAM setup, then current private `itsai-platform` `DesktopToken` | Short-lived access to mAI; no static bearer login default |
 | Application bearer token | Entra client-credentials flow with approved app registration | Short-lived access; refresh through the credential provider |
 | APIM subscription key | mAI Factory team after Application Access approval | Additional gateway header, not a substitute for a bearer token |
 | Tenant ID and client ID | Approved app registration/ACN owner | Identify tenant and application; IDs are not secrets but do not invent them |
@@ -30,8 +30,10 @@ stored token. Never make up a key-creation page or permission.
 
 1. Confirm onboarding with the [standard request](https://worldbankgroup.service-now.com/wbg/en/itsai-platform-on-boarding-request?id=wbg_sc_catalog&sys_id=7715cc6d93ac96d0a2f6fd647aba1042).
    For IFC, get the IFC-specific form from `itsai_platform_admin@worldbankgroup.org`.
-2. For local Desktop Access, use `DesktopToken` after the private SDK is installed.
-   A successful browser login obtains the bearer token. Do not save that token
+2. For local Desktop Access, complete WAM setup under **Desktop Access** in the
+   current platform documentation and install the approved current private SDK.
+   Use `DesktopToken().get_token(env="DEV")` (`QA` or `PROD` when approved).
+   The returned bearer is a string. Do not save that token
    to source files or request an application secret just to use a local notebook.
 3. For Application Access, ask the approved owner/team to provision tenant ID,
    client ID, client secret, scope, APIM key, app permissions, and ACN/network
@@ -46,6 +48,14 @@ stored token. Never make up a key-creation page or permission.
 6. If a portal step or permission is unclear, ask support for current instructions.
    Do not promise that this skill itself can issue credentials.
 
+The final Desktop migration cutoff is **November 30, 2026**. Desktop Access has
+a **50 million token monthly limit**. Web Access Management (WAM) replaces the
+old Desktop login path. Request extensions from
+`itsai_platform_admin@worldbankgroup.org`. The supplied material does not state
+an exact SDK version, supported OS list, or OS-specific WAM settings. Confirm
+those in the current Desktop Access documentation. Never add a device-code,
+MSAL device flow, or `InteractiveBrowserCredential` fallback.
+
 ## Save Secrets
 
 Prefer an approved OS credential store for local work and Azure Key Vault or
@@ -59,7 +69,7 @@ not through an agent terminal session. Agent terminal output can be recorded.
 
 ```bash
 uv add keyring
-python /path/to/mai-credentials/scripts/store_credentials.py --env DEV --kind application
+uv run python /path/to/mai-credentials/scripts/store_credentials.py --env DEV --kind application
 ```
 
 The helper stores `AZURE_CLIENT_SECRET` and `APIM_SUBSCRIPTION_KEY` under service
@@ -82,14 +92,19 @@ are a transport mechanism, not encrypted storage.
 
 | Environment | Gateway host | Scope | Desktop SDK name |
 | --- | --- | --- | --- |
-| DEV | `azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV_DESKTOP` |
-| QA | `azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA_DESKTOP` |
-| PROD | `azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD_DESKTOP` |
+| DEV | `azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV` |
+| QA | `azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA` |
+| PROD | `azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD` |
 
-Use a token-provider callable for SDKs that support it. `api_key=provider`
-retains refresh; `api_key=provider()` freezes the current token. For raw HTTP,
-call the provider when each request is made. Do not assume one token is valid
-for a whole notebook session, queue, batch poll loop, or environment switch.
+The retired Desktop names with `_DESKTOP` suffixes are not a fallback. Keep
+Application scopes and APIM keys unchanged and matched to the environment.
+
+Desktop tokens last about one hour. For OpenAI 3.35.1, a tested `api_key`
+callable can wrap the actual `credential.get_token(env="DEV")` string per
+request. This local wrapper is not an SDK `token_provider` method. For clients
+that capture strings, rebuild after refresh. Gemini needs the refreshed bearer
+in both `api_key` and `Authorization`. Raw HTTP obtains a fresh provider result
+before each request. Do not assume one token lasts for a full notebook or job.
 
 ## Private SDK Installation
 
@@ -116,6 +131,11 @@ The Python skill includes a named-index configuration which scopes only
 or expose a JFrog token to a public index. Do not run `env`, `set`, credential
 store dumps, or verbose HTTP logging for troubleshooting.
 
+Existing uv projects must upgrade the locked private SDK, not just repeat
+`uv add`. With approved private-index authentication configured, run
+`uv lock --upgrade-package itsai-platform` and `uv sync`, then check the release
+against current Desktop Access requirements. Do not invent a minimum version.
+
 The PIP shared-environment option can avoid repeated SDK downloads, but does
 not secure a plaintext token. Prefer project environments for reproducibility.
 If using a shared approved environment, keep it outside repositories, protect
@@ -131,6 +151,9 @@ owner. Do not print values or token fragments. If a credential was disclosed,
 revoke/rotate it first and review access logs. Deleting the visible text or Git
 commit alone does not make it safe.
 
-Sources: PIP `mAI*.qmd` credential workflows and both supplied builder guides.
+Sources: PIP `mAI*.qmd` credential workflows, historical builder guides, and the
+2026-10-23 Desktop migration notice and endpoint/auth migration guide. These
+local source inputs are not distributed. Do not copy credentials or personal
+data from the supplied notebook export into project files.
 Current policy and [mAI documentation](https://ai.worldbank.org/platform/documentation)
 take priority. Support: `itsai_platform_admin@worldbankgroup.org`.

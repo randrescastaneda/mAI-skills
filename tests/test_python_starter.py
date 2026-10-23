@@ -53,10 +53,10 @@ class StarterTests(unittest.TestCase):
 
     def test_model_route_is_explicit_and_not_required_for_offline_check(self):
         self.assertEqual(self.config().openai_base_url, "")
-        for path in ("/maifactory/openai/", "/conversationalai/maifactory/openai/"):
+        for env, (host, _) in starter.ENVIRONMENTS.items():
             self.assertEqual(
-                self.config(MAI_OPENAI_BASE_URL="https://azapimdev.worldbank.org" + path).openai_base_url,
-                "https://azapimdev.worldbank.org" + path,
+                self.config(MAI_ENV=env, MAI_OPENAI_BASE_URL=f"https://{host}/maifactory/openai/").openai_base_url,
+                f"https://{host}/maifactory/openai/",
             )
 
     def test_untrusted_or_mixed_environment_urls_are_rejected(self):
@@ -69,6 +69,10 @@ class StarterTests(unittest.TestCase):
             "https://azapimdev.worldbank.org/maifactory/openai/?key=secret",
             "https://azapimdev.worldbank.org/maifactory/openai/#fragment",
             "https://azapimdev.worldbank.org/maifactory/openai/responses",
+            "https://azapimdev.worldbank.org/maifactory/openai",
+            "https://azapimdev.worldbank.org/conversationalai/maifactory/openai/",
+            "https://azapimdev.worldbank.org/conversationalai/v2/",
+            "https://azapimdev.worldbank.org/conversationalai/v2/openai/v1/",
         ):
             with self.subTest(base=base), self.assertRaises(starter.ConfigurationError):
                 self.config(MAI_OPENAI_BASE_URL=base)
@@ -88,15 +92,32 @@ class StarterTests(unittest.TestCase):
         provider.assert_not_called()
 
     def test_desktop_provider_uses_selected_sdk_environment_each_time(self):
+        for env in starter.ENVIRONMENTS:
+            credential = Mock()
+            credential.get_token.side_effect = ["first-test-token", "second-test-token"]
+            sdk = types.SimpleNamespace(DesktopToken=Mock(return_value=credential))
+            with self.subTest(env=env), patch.dict(sys.modules, {"itsai.platform.authentication": sdk}), patch.object(starter, "secret") as secret:
+                provider = starter.make_token_provider(self.config(MAI_ENV=env))
+                credential.get_token.assert_not_called()
+                self.assertEqual(provider(), "first-test-token")
+                self.assertEqual(provider(), "second-test-token")
+            sdk.DesktopToken.assert_called_once_with()
+            self.assertEqual(credential.get_token.call_count, 2)
+            credential.get_token.assert_called_with(env=env)
+            credential.token_provider.assert_not_called()
+            secret.assert_not_called()
+
+    def test_desktop_auth_failure_does_not_fall_back_to_device_code(self):
         credential = Mock()
-        credential.get_token.side_effect = ["first-test-token", "second-test-token"]
+        credential.get_token.side_effect = RuntimeError("test-wam-setup-error")
         sdk = types.SimpleNamespace(DesktopToken=Mock(return_value=credential))
-        with patch.dict(sys.modules, {"itsai.platform.authentication": sdk}):
-            provider = starter.make_token_provider(self.config(MAI_ENV="QA"))
-            self.assertEqual(provider(), "first-test-token")
-            self.assertEqual(provider(), "second-test-token")
-        self.assertEqual(credential.get_token.call_count, 2)
-        credential.get_token.assert_called_with(env="QA_DESKTOP")
+        identity = types.SimpleNamespace(DeviceCodeCredential=Mock(), InteractiveBrowserCredential=Mock())
+        with patch.dict(sys.modules, {"itsai.platform.authentication": sdk, "azure.identity": identity}):
+            provider = starter.make_token_provider(self.config())
+            with self.assertRaises(RuntimeError):
+                provider()
+        identity.DeviceCodeCredential.assert_not_called()
+        identity.InteractiveBrowserCredential.assert_not_called()
 
     def test_application_provider_and_headers_use_separate_credentials(self):
         env = {"AZURE_TENANT_ID": "test-tenant", "AZURE_CLIENT_ID": "test-client", "AZURE_CLIENT_SECRET": "test-client-secret", "APIM_SUBSCRIPTION_KEY": "test-apim-key"}
@@ -130,6 +151,38 @@ class StarterTests(unittest.TestCase):
         provider.assert_not_called()
         client.responses.create.assert_called_once_with(model="approved-test-model", input="public sample", max_output_tokens=128)
 
+    def test_model_text_falls_back_to_gateway_blocks(self):
+        outputs = [
+            ([{"type": "reasoning", "text": "not answer"},
+              {"type": "message", "content": [{"type": "output_text", "text": "pong"}]}], "pong"),
+            ([{"type": "message", "content": [None, {"type": "refusal", "refusal": "not text"},
+               {"type": "text", "text": "first"}, {"type": "output_text", "text": "second"}]}], "first\nsecond"),
+            ([None, {"type": "output_text", "text": "pong"}], "pong"),
+        ]
+        config = self.config(MAI_OPENAI_BASE_URL="https://azapimdev.worldbank.org/maifactory/openai/", MAI_MODEL="approved-test-model")
+        for output, expected in outputs:
+            response = Mock(output_text="", model_dump=Mock(return_value={"output": output}))
+            client = Mock()
+            client.responses.create.return_value = response
+            factory = Mock()
+            factory.return_value.__enter__ = Mock(return_value=client)
+            factory.return_value.__exit__ = Mock(return_value=False)
+            with self.subTest(output=output), patch.dict(sys.modules, {"openai": types.SimpleNamespace(OpenAI=factory, DefaultHttpxClient=Mock())}):
+                self.assertEqual(starter.ask(config, lambda: "test-token", "public sample"), expected)
+
+    def test_empty_or_nontext_responses_fail_with_safe_message(self):
+        config = self.config(MAI_OPENAI_BASE_URL="https://azapimdev.worldbank.org/maifactory/openai/", MAI_MODEL="approved-test-model")
+        for output in (None, [], [{"type": "reasoning", "text": "sensitive-test-value"}], [{"type": "message", "content": [{"type": "output_text", "text": " "}]}]):
+            response = Mock(output_text="", model_dump=Mock(return_value={"output": output}))
+            client = Mock()
+            client.responses.create.return_value = response
+            factory = Mock()
+            factory.return_value.__enter__ = Mock(return_value=client)
+            factory.return_value.__exit__ = Mock(return_value=False)
+            with self.subTest(output=output), patch.dict(sys.modules, {"openai": types.SimpleNamespace(OpenAI=factory, DefaultHttpxClient=Mock())}), self.assertRaises(starter.ConfigurationError) as error:
+                starter.ask(config, lambda: "test-token", "public sample")
+            self.assertNotIn("sensitive-test-value", str(error.exception))
+
     def test_health_has_timeout_fresh_auth_and_no_redirect(self):
         requests = types.SimpleNamespace(get=Mock(return_value=types.SimpleNamespace(status_code=200, json=lambda: {"status": "healthy"})))
         provider = Mock(return_value="test-token")
@@ -137,6 +190,7 @@ class StarterTests(unittest.TestCase):
             starter.health(self.config(), provider)
         provider.assert_called_once_with()
         options = requests.get.call_args.kwargs
+        self.assertEqual(requests.get.call_args.args[0], "https://azapimdev.worldbank.org/conversationalai/platform/health/")
         self.assertEqual(options["timeout"], 30)
         self.assertIs(options["allow_redirects"], False)
         self.assertEqual(options["headers"]["Authorization"], "Bearer test-token")

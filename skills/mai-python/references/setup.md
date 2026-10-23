@@ -50,19 +50,52 @@ Do not persist these variables in user profiles or `.env`. Close the terminal
 after use. Environment values remain accessible to that user's processes;
 use an approved credential provider when available.
 
-Desktop authentication then uses:
+For Desktop authentication, install the approved current private SDK and
+complete Web Access Management (WAM) setup from **Desktop Access** in current
+[platform documentation](https://ai.worldbank.org/platform/documentation).
+The migration material does not state an exact SDK release, supported OS list,
+or OS-specific WAM settings. Older Python 3.12 guidance is not that support
+matrix. Do not invent platform configuration or a broker-specific requirement.
+
+The final cutoff is **November 30, 2026**. Desktop Access has a **50 million
+token monthly limit**. Request extensions through
+`itsai_platform_admin@worldbankgroup.org`.
+
+For an existing uv project, first upgrade the locked private SDK through the
+approved index with protected authentication:
+
+```bash
+uv lock --upgrade-package itsai-platform
+uv sync
+```
+
+`uv add` alone can retain an old lock. Check the installed release against
+current Desktop Access requirements before login. For a new project, use
+`uv add itsai-platform` after private-index setup.
+
+The in-memory provider is:
 
 ```python
 from itsai.platform.authentication import DesktopToken
 
 credential = DesktopToken()
 def token_provider() -> str:
-    return credential.get_token(env="DEV_DESKTOP")
+    return credential.get_token(env="DEV")
 ```
 
-Keep the provider in memory. Do not display the returned token, decode it in
-an online JWT site, or store it as a permanent API key. SDK environment names
-must match the installed SDK documentation.
+Keep the provider and returned string in memory. Use `QA` or `PROD` only for the
+matching approved host. The old `_DESKTOP` suffixes are retired. This wrapper
+is not a `DesktopToken.token_provider` method. Do not add device-code, MSAL
+device flow, or `InteractiveBrowserCredential` fallback. Do not display a
+token, decode it online, or store it as a permanent API key.
+
+Tokens last about one hour. The tested OpenAI 3.35.1 supports
+`api_key=token_provider` and calls the wrapper per request. With
+`api_key=token_provider()` or another captured string, refresh and rebuild the
+client before expiry. Gemini captures the bearer in both `api_key` and
+`Authorization`, so rebuild it after refresh. Raw HTTP calls the provider just
+before each request. Do not copy credential-bearing notebook installation
+cells or notebook outputs into tracked files.
 
 Application Access requires `azure-identity`, approved app credentials, APIM
 key, and an environment-matched scope. `get_bearer_token_provider` refreshes

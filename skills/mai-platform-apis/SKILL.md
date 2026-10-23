@@ -36,7 +36,7 @@ host-relative; do not concatenate them with an existing platform path.
 | Documents & Reports (DNR) | `/conversationalai/platform/api/dnr/` | Search body, filters, sort, facets, result page |
 | Topics Tagging | `/conversationalai/platform/topics-tagging/` | Taxonomy, threshold, model, topic output |
 | Translation | `/conversationalai/platform/translate/` | Language codes, text/model fields, output |
-| Google Search grounding | `/maifactory/gemini/responses/{model}` | Native Generate Content tool and grounding metadata |
+| Google Search grounding | Separate Gemini grounding/Interactions contract | Verify exact route, tool schema, model and grounding metadata; do not infer it from native generation |
 | Text-to-Speech (TTS) | `/conversationalai/platform/text-to-speech` | Multipart fields, SSML, audio result, SAS lifetime |
 
 The newer platform bases are
@@ -45,6 +45,12 @@ The newer platform bases are
 `https://azapim.worldbank.org/conversationalai/platform`. Gemini grounding uses
 the foundation route, not this platform base. Verify complete URLs, methods,
 trailing slash behavior, and environment scope before any call.
+
+The supplied foundation migration does not change these platform routes.
+Never globally strip `/conversationalai`. Desktop callers use the current
+private SDK with WAM setup and `get_token(env="DEV")`, `QA`, or `PROD` as
+described in the local access reference. Application client credentials,
+Connect content OAuth, and Databricks workspace identity do not change.
 
 ## Documents & Reports
 
@@ -143,15 +149,17 @@ codes are supported. Do not assume every ISO code is accepted.
 
 ## Google Search Grounding
 
-The newer guide replaces standalone Google Search with grounding in Gemini
-Generate Content. Do not generate new calls to the legacy
-`/conversationalai/platform/google_search/` route. Confirm any migration with
-current platform documentation before changing an existing integration.
+Do not generate new calls to the deprecated standalone
+`/conversationalai/platform/google_search/` route. Grounding in Gemini is a
+separate integration, not an automatic feature of either native generation
+route. The supplied migration reference identifies Interactions for existing
+grounding clients. Verify the exact current grounding contract before changing
+an existing integration; do not switch an ordinary generation client to it.
 
 - Verify the supported model, native tool schema, search restrictions, grounding
   metadata, citations, and any additional charges.
-- Do not reuse OpenAI's `web_search_preview`, Responses `input`, or the legacy
-  Gemini Interactions payload for a native Generate Content route.
+- Do not reuse OpenAI's `web_search_preview` or Responses `input` as a Gemini
+  tool schema, or send Interactions payloads to native Generate Content.
 - Check whether data in the prompt or query may leave the approved boundary.
   Use public, non-sensitive search terms unless policy explicitly permits more.
 - Retain documented grounding references and map them to the answer. Distinguish
@@ -224,7 +232,11 @@ limits, or use a public provider as an access workaround.
 ## Sources
 
 - Historical sources (not bundled): `mai-factory-builder.md` and
-  `mai-factory-builder.agent.md`. Legacy payloads need current verification.
+  `mai-factory-builder.agent.md`. Legacy task payloads need current verification.
+- The supplied endpoint migration guide and auth/Gemini references resolve
+  Desktop acquisition and the native generation/grounding boundary. Local source
+  inputs are not distributed. Never copy source notebook credentials, personal
+  data, cells, or outputs into project files.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

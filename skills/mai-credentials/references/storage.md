@@ -30,6 +30,15 @@ If an approved local environment file is necessary:
 
 Prefer OS stores instead of teaching an agent to load `.env` files.
 
+OS storage is not a replacement for Desktop WAM authentication. The current
+default is `DesktopToken().get_token(env="DEV")` with the approved private SDK,
+not a bearer copied to an environment variable or keyring. Keep Desktop tokens
+in memory. Rebuild clients that captured a token string after refresh, at about
+one hour; a tested SDK callable can acquire through the provider per request.
+Never manipulate an undocumented Desktop token cache or add a device-code
+fallback when WAM setup fails. Use current **Desktop Access** documentation and
+platform support instead.
+
 ## Deployed Applications
 
 Use Azure Key Vault or the approved runtime's secret service. The supplied

@@ -22,8 +22,7 @@ mai_config <- function(values = NULL) {
   if (!source_type %in% c("interactive", "job")) stop("Invalid MAI_SOURCE_TYPE.", call. = FALSE)
   host <- unname(hosts[[environment]])
   url <- setting("MAI_RESPONSES_URL")
-  allowed <- paste0("https://", host, c("/maifactory/openai/responses",
-                                        "/conversationalai/maifactory/openai/responses"))
+  allowed <- paste0("https://", host, "/maifactory/openai/responses")
   if (nzchar(url) && !url %in% allowed) {
     stop("Use a verified Responses URL on the matching mAI host.", call. = FALSE)
   }
@@ -54,15 +53,14 @@ mai_token_provider <- function(config) {
     reticulate::import("itsai.platform.authentication")$DesktopToken()
   }, error = function(e) stop("Check the approved Python environment and private Desktop SDK.", call. = FALSE))
   function() {
-    tryCatch(credential$get_token(env = paste0(config$environment, "_DESKTOP")),
+    tryCatch(credential$get_token(env = config$environment),
              error = function(e) stop("Desktop login failed. Check approved access and network locally.", call. = FALSE))
   }
 }
 
 mai_perform <- function(config, token_provider, url, body = NULL) {
   allowed <- paste0("https://", config$host, c(
-    "/conversationalai/platform/health/", "/maifactory/openai/responses",
-    "/conversationalai/maifactory/openai/responses"
+    "/conversationalai/platform/health/", "/maifactory/openai/responses"
   ))
   if (!url %in% allowed) stop("Unapproved request URL.", call. = FALSE)
   response <- tryCatch({
@@ -91,12 +89,24 @@ mai_health <- function(config, token_provider) {
 }
 
 mai_response_text <- function(result) {
+  text_value <- function(value) {
+    if (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(trimws(value))) {
+      value
+    } else character()
+  }
   text <- character()
-  for (item in result$output) {
-    if (identical(item$type, "message")) {
+  if (is.list(result)) {
+    text <- text_value(result$output_text)
+    if (length(text)) return(text)
+    for (item in result$output) {
+      if (!is.list(item)) next
+      if (isTRUE(item$type %in% c("output_text", "text"))) {
+        text <- c(text, text_value(item$text))
+      }
+      if (!identical(item$type, "message")) next
       for (block in item$content) {
-        if (identical(block$type, "output_text") && is.character(block$text)) {
-          text <- c(text, block$text)
+        if (is.list(block) && isTRUE(block$type %in% c("output_text", "text"))) {
+          text <- c(text, text_value(block$text))
         }
       }
     }

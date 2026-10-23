@@ -8,6 +8,12 @@ description: Set up approved World Bank Databricks access to mAI Factory. Use fo
 Use the workspace team's approved integration. Do not assume a local Desktop
 login, an environment variable, or a public Databricks tutorial applies.
 
+The Desktop WAM migration does not replace Databricks managed identity or the
+approved workspace service-principal flow. The supplied notebook export has a
+stale Databricks introduction but later uses Desktop authentication. It is not
+authority to run a personal Desktop login on a cluster. Do not copy its
+credential-like installation data, personal information, source cells, or outputs.
+
 ## Provisioning
 
 1. Confirm which World Bank workspace, cluster/runtime, team, and environment
@@ -26,7 +32,7 @@ login, an environment variable, or a public Databricks tutorial applies.
 ## Safe Notebook Setup
 
 - Follow the provided runtime and package instructions. Do not run the local
-  private-index installer or browser login on a shared cluster without approval.
+   private-index installer or personal WAM/Desktop login on a shared cluster.
 - Do not store personal bearer tokens, JFrog tokens, app secrets, or APIM keys
   in notebook cells, widgets, output, Spark configuration, or committed notebooks.
 - Use only the team's approved credential/secret integration. Secret redaction
@@ -49,8 +55,11 @@ login, an environment variable, or a public Databricks tutorial applies.
    with a finite timeout and TLS verification. A healthy result proves only
    reachability, not model permissions or complete setup.
 3. Check the current request contract in [mAI documentation](https://ai.worldbank.org/platform/documentation)
-   or the workspace team's current example. The supplied guides disagree on
-   foundation routes and Gemini APIs. Do not combine their paths and payloads.
+   or the workspace team's current example. The migration guide resolves
+   foundation routes to root `/maifactory`: OpenAI `/openai/responses`, Gemini
+   `/gemini/responses/{model}` or `/gemini/models/{model}:generateContent`, and
+   Bedrock `/bedrock/model/{model_id}/converse`. Do not use retired foundation
+   prefixes, or remove `/conversationalai/platform` from health and task APIs.
 4. If a search tool supports intranet filters, restrict documentation search to
    `siteurl=https://worldbankgroup.sharepoint.com/sites/aiwb` and
    `contenttype=OneCMS_File`, including `mai-factory-documentation.docx`.
@@ -63,6 +72,20 @@ login, an environment variable, or a public Databricks tutorial applies.
 
 ## Troubleshooting and Handoff
 
+Preserve models, prompts, and business logic when updating transport. OpenAI
+uses Responses input/output with model in JSON and SDK base ending
+`/maifactory/openai/`. Gemini uses native `contents`/`parts`; `google-genai`
+requires `api_version=""` and bearer in both `api_key` and Authorization.
+Grounding/Interactions needs separate verification. Bedrock uses raw HTTP
+Converse with model ID in the path, not Anthropic native fields or SigV4 SDKs.
+
+Keep `Authorization`, actual `x-source-type`, approved team attribution, and
+any required application subscription key on every call. Use the workspace
+provider's documented refresh policy. Rebuild clients that captured bearer
+strings after refresh, including Gemini; do not reuse an expired notebook token.
+OpenAI `output_text` may be empty, so also inspect structured output text.
+Omit GPT-5 `temperature`; use reasoning/output controls only when supported.
+
 For 401, check identity, expiry, and audience locally. For 403, check workspace
 provisioning and network/ACN approval. For 404/422, check the current route and
 schema. For 429, distinguish a temporary rate limit from exhausted quota.
@@ -73,4 +96,6 @@ and cluster/workspace identifier permitted by policy to the Data Science team.
 Platform support: `itsai_platform_admin@worldbankgroup.org`.
 
 Historical source (not bundled): `mai-factory-builder.md`, Databricks Access
-section. Current workspace instructions take priority over this source snapshot.
+section. The supplied endpoint migration guide resolves foundation transport,
+not workspace token acquisition. Local source inputs are not distributed.
+Current workspace instructions take priority for managed identity setup.
