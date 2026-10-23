@@ -50,9 +50,9 @@ def load_config(environ: Mapping[str, str] | None = None) -> Config:
             or url.netloc != host
             or url.query
             or url.fragment
-            or url.path not in {"/maifactory/openai/", "/conversationalai/maifactory/openai/"}
+            or url.path != "/maifactory/openai/"
         ):
-            raise ConfigurationError("Use a verified OpenAI SDK base on the matching mAI host.")
+            raise ConfigurationError("Use /maifactory/openai/ on the matching mAI host; retired model routes are not supported.")
     if access == "application":
         for name in ("AZURE_TENANT_ID", "AZURE_CLIENT_ID"):
             if not values.get(name, "").strip():
@@ -81,7 +81,7 @@ def make_token_provider(config: Config) -> Callable[[], str]:
         from itsai.platform.authentication import DesktopToken
 
         credential = DesktopToken()
-        return lambda: credential.get_token(env=f"{config.environment}_DESKTOP")
+        return lambda: credential.get_token(env=config.environment)
     from azure.identity import ClientSecretCredential, get_bearer_token_provider
 
     credential = ClientSecretCredential(
@@ -131,7 +131,29 @@ def ask(config: Config, provider: Callable[[], str], prompt: str) -> str:
         http_client=DefaultHttpxClient(follow_redirects=False),
     ) as client:
         response = client.responses.create(model=config.model, input=prompt, max_output_tokens=128)
-    return response.output_text
+    if isinstance(response.output_text, str) and response.output_text.strip():
+        return response.output_text
+    # Some gateway responses omit the SDK convenience text but retain text blocks.
+    # Schema warnings can include response data, so do not emit them.
+    parts = []
+    for item in response.model_dump(warnings=False).get("output") or []:
+        if not isinstance(item, dict):
+            continue
+        if (
+            item.get("type") in {"output_text", "text", None}
+            and isinstance(item.get("text"), str) and item["text"].strip()
+        ):
+            parts.append(item["text"])
+        if item.get("type") in {"message", None}:
+            for block in item.get("content") or []:
+                if (
+                    isinstance(block, dict) and block.get("type") in {"output_text", "text"}
+                    and isinstance(block.get("text"), str) and block["text"].strip()
+                ):
+                    parts.append(block["text"])
+    if not parts:
+        raise ConfigurationError("No Responses text returned; check response status and the approved model contract locally.")
+    return "\n".join(parts)
 
 
 def main() -> int:
