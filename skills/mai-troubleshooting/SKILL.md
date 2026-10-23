@@ -2,7 +2,7 @@
 name: mai-troubleshooting
 description: >-
   Diagnose World Bank mAI Factory setup, authentication, network, API, and quota
-  failures. Use for 401, 403, 404, 422, 429, 500, 504, expired tokens, wrong
+  failures. Use for WAM or device-code migration, 401, 403, 404, 422, 429, 500, 504, expired tokens, wrong
   environments, health checks, Mac or IFC access, Databricks provisioning, and
   sanitized platform support reports. Includes independent access setup and
   local token diagnostics without exposing claims or secrets.
@@ -12,6 +12,9 @@ description: >-
 
 Use this skill to isolate a failure without exposing credentials or weakening
 access controls. It has no dependency on another skill.
+
+Desktop now uses Web Access Management (WAM) through the approved private SDK.
+Follow the local access reference; do not restore device-code login as a fallback.
 
 ## First Actions
 
@@ -89,7 +92,9 @@ category locally and compare it with the verified platform contract.
    only a base URL during promotion. App subscription/product access can also
    be environment-specific.
 3. Use a fresh bearer from the provider at request time. For SDKs, confirm a
-   refresh-capable credential hook, not a token captured at client startup.
+   supported refresh hook or rebuild a client after refreshing its captured
+   token. Desktop tokens last about one hour. OpenAI 3.35.1 supports the tested
+   callable wrapper; Gemini captures both `api_key` and Authorization.
 4. Check local clock accuracy and credential expiry through approved tooling.
    Confirm the app's tenant and grant without exposing app secrets.
 5. Inspect only local expiry/audience comparison flags when needed. A decoded
@@ -177,10 +182,24 @@ files, open public routes, use an unapproved proxy, or bypass private endpoints.
 
 ## 404 and 422: Route or Schema
 
-The guides conflict: legacy foundation routes include
-`/conversationalai/maifactory`, while the newer guide lists root `/maifactory`.
-Gemini Interactions and native Generate Content are different contracts. Bedrock
-Converse and Anthropic native bodies/response parsers are also different.
+The migration guide resolves the old route conflict. Foundation routes start
+at `/maifactory`, not the retired `/conversationalai/maifactory` root. Preserve
+health, DNR, tagging, translation, and TTS under `/conversationalai/platform`.
+
+| Failure | Migration check |
+| --- | --- |
+| Desktop acquisition fails | Current private SDK, WAM setup under Desktop Access, approved runtime/OS and `get_token(env="DEV")`, `QA`, or `PROD`. No retired suffixes, device-code, MSAL device flow, or InteractiveBrowserCredential fallback |
+| OpenAI 404 | SDK base ends `/maifactory/openai/`; SDK appends `responses`; do not call Chat Completions on that base |
+| Gemini 404 | Base `/maifactory/gemini` and `google-genai` `api_version=""`; remove SDK-inserted `/v1beta/`, not platform prefixes globally |
+| Gemini 400/422 | Native `contents`/`parts`, optional `systemInstruction` and `generationConfig`; not OpenAI `input` or chat `messages` |
+| Bedrock 400/422 | Raw HTTP `/maifactory/bedrock/model/{model_id}/converse`, model in path, Converse text blocks and `inferenceConfig`; no Anthropic native fields or boto3/SigV4 |
+| GPT-5 parameter rejection | Omit `temperature`; use output-token/reasoning controls only when supported |
+| OpenAI 200 but no convenience text | Read non-empty `output_text`, then structured `output[].content[].text`; distinguish no text, tools, refusal and incomplete output |
+
+Grounding/Interactions is separate from native Gemini generation and must be
+verified. Do not move an existing grounding client to a generation route or
+enable grounding during a transport-only migration. Keep models, prompts, and
+business logic unchanged.
 
 Verify the complete SDK-generated URL, without logging headers or query values.
 Check doubled prefixes, missing SDK suffixes, trailing slash redirects, API
@@ -207,6 +226,14 @@ server delay; stop if that delay exceeds the budget.
 For exhausted quota, stop and use the approved quota/support process. Do not
 rotate identities, switch environments, change `x-source-type`, or use public
 providers to evade limits. Repeated unchanged retries consume resources.
+
+The migration notice specifies a **50 million token monthly Desktop limit**.
+Confirm counters and the current enforcement period without assuming that
+every 429 means this limit. Request extensions from
+`itsai_platform_admin@worldbankgroup.org`. The final Desktop migration cutoff
+is **November 30, 2026**; do not restore retired login flows to bypass it.
+No exact SDK release, supported OS list, or OS-specific WAM settings were
+supplied. Use current Desktop Access documentation instead of guessing.
 
 ## 500 and 504: Service or Timeout
 
@@ -256,6 +283,10 @@ can request approved diagnostics through the correct process.
 
 - Historical sources (not bundled): `mai-factory-builder.md` and
   `mai-factory-builder.agent.md`. Legacy examples are not current contracts.
+- The supplied 2026-10-23 Desktop migration notice, endpoint migration guide,
+  and auth/OpenAI/Gemini/Bedrock references resolve the migration decisions.
+  Local inputs are not distributed. Never reproduce source notebook credentials,
+  personal data, source cells, or outputs in diagnostics or project files.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

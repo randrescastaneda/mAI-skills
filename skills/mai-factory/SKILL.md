@@ -1,6 +1,6 @@
 ---
 name: mai-factory
-description: Start using the World Bank mAI Factory with a coding agent. Use for onboarding, first connection, choosing Desktop/Application/Posit Connect/Databricks Access, finding approved models and APIs, or planning a secure mAI integration.
+description: Start using the World Bank mAI Factory with a coding agent. Use for onboarding, WAM or device-code migration, first connection, choosing Desktop/Application/Posit Connect/Databricks Access, finding approved models and APIs, or planning a secure mAI integration.
 ---
 
 # mAI Factory
@@ -27,7 +27,7 @@ provider endpoint. These instructions do not grant access or change Bank policy.
 
 | Execution location | Access | What the user needs |
 | --- | --- | --- |
-| Local IDE, personal notebook, approved JupyterHub | Desktop | Onboarding, Bank network/VPN, `itsai-platform`, browser login |
+| Local IDE, personal notebook, approved JupyterHub | Desktop | Onboarding, approved network, current private `itsai-platform`, supported WAM setup |
 | Backend, deployed app, scheduler, unattended process | Application | Approved app registration/ACN, tenant/client IDs, client secret, environment scope, APIM subscription key, approved network |
 | R/Shiny content on the internal Posit Connect server | Posit Connect | Approved Connect content OAuth integration, Connect `API_KEY`, `OAUTH_INTEGRATION_GUID`; not Desktop onboarding |
 | Bank Databricks workspace | Databricks | Data Lab provisioning and the workspace team's approved configuration |
@@ -54,23 +54,51 @@ local credential workarounds in a managed Databricks cluster.
 
 | Environment | Host | OAuth scope | Desktop SDK environment |
 | --- | --- | --- | --- |
-| DEV | `https://azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV_DESKTOP` |
-| QA | `https://azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA_DESKTOP` |
-| PROD | `https://azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD_DESKTOP` |
+| DEV | `https://azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV` |
+| QA | `https://azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA` |
+| PROD | `https://azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD` |
 
 Keep host, scope, key, app permission, and deployment in the same environment.
-Confirm Desktop SDK environment names for the installed SDK; one source
-checklist says `DEV`, but its actual example uses `DEV_DESKTOP`.
+The migration guide resolves the old environment-name conflict. Pass `DEV`,
+`QA`, or `PROD` to `get_token`; do not use retired `_DESKTOP` suffixes.
 
 Headers: `Authorization: Bearer <fresh token>`, `x-source-type` (`interactive`
 for a person, `job` for an unattended workload), and `x-team-name` (approved
 team name). Application Access also sends `Ocp-Apim-Subscription-Key`.
 Use JSON Content-Type only for JSON, not multipart uploads.
 
-For local Desktop setup, the PIP source specifies Python no later than 3.12.
-Use a version approved for the private SDK, not the newest Python by default.
+For local Desktop setup, older PIP guidance used Python no later than 3.12.
+Confirm current SDK/runtime/OS support in **Desktop Access** documentation;
+the supplied migration material does not specify an exact SDK or OS version.
 GlobalProtect must be connected. Outside the DC office or off `bluemarlin`,
 select US East; on DC `bluemarlin`, the source says connected is sufficient.
+
+## Desktop Migration
+
+Complete Web Access Management (WAM) setup from current documentation under **Desktop
+Access**, and install the approved current private SDK. The final migration
+cutoff is **November 30, 2026**. Desktop Access has a **50 million token monthly
+limit**. Ask `itsai_platform_admin@worldbankgroup.org` for extensions.
+
+```python
+from itsai.platform.authentication import DesktopToken
+
+credential = DesktopToken()
+access_token = credential.get_token(env="DEV")
+```
+
+Keep this string in memory. Do not add device-code, MSAL device flow, or
+`InteractiveBrowserCredential` fallback. Do not call a supposed
+`DesktopToken.token_provider` method. Tokens last about one hour. Rebuild
+clients that capture the string after refresh. A tested OpenAI SDK callable
+may instead call an in-memory wrapper around `get_token` per request.
+
+Foundation calls use root `/maifactory`: OpenAI `/openai/responses`, native
+Gemini `/gemini/responses/{model}` or `/gemini/models/{model}:generateContent`,
+and raw HTTP Bedrock `/bedrock/model/{model_id}/converse`. Preserve models,
+prompts, and business logic. Preserve `/conversationalai/platform` for health,
+DNR, tagging, translation, and TTS. Application Access, Connect content OAuth,
+and Databricks managed identity are not converted to Desktop authentication.
 
 ## Choose the Next Workflow
 

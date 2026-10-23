@@ -32,15 +32,16 @@ from one guide with a payload or parser from another guide.
 
 ## Endpoint Discovery
 
-These are discovery hints from the newer builder guide, NOT an invocation
-specification. Paths below are host-relative. Do not add `/maifactory` twice.
-Verify the method, complete URL, API version, request, and response in live docs.
+The supplied migration guide resolves the generation routes below. Embeddings,
+streaming, tools, model entitlements, and feature limits still need current
+documentation. Paths are host-relative; do not add `/maifactory` twice.
 
 | Service | Discovery path | Contract to verify |
 | --- | --- | --- |
 | OpenAI Responses | `/maifactory/openai/responses` | Responses request and output events |
 | OpenAI embeddings | `/maifactory/openai/embeddings` | Deployment, input limits, dimensions |
 | Gemini Generate Content | `/maifactory/gemini/responses/{model}` | Native contents, parts, tools, candidates |
+| Gemini native alternative | `/maifactory/gemini/models/{model}:generateContent` | Same native contents/parts body |
 | Gemini embeddings | `/maifactory/gemini/embeddings/{model}` | Native or gateway embedding format |
 | Bedrock Converse | `/maifactory/bedrock/model/{model_id}/converse` | Converse content blocks and output |
 | Bedrock streaming | `/maifactory/bedrock/model/{model_id}/converse-stream` | Gateway stream transport and events |
@@ -49,6 +50,11 @@ The reference environment bases are `https://azapimdev.worldbank.org/maifactory`
 `https://azapimqa.worldbank.org/maifactory`, and
 `https://azapim.worldbank.org/maifactory`. Keep each base coupled to its scope in
 the access reference. A host-relative path is not an SDK base URL.
+
+Retire old foundation routes below `/conversationalai/maifactory` and old
+Gemini chat routes. Preserve `/conversationalai/platform` for health and task
+APIs. Migrate transport only: keep the caller's model, prompts, and business
+logic. Do not add uploads or grounding when the existing client did not use them.
 
 ## Model Selection
 
@@ -73,21 +79,21 @@ SDK's token-provider support, API-version requirements, and gateway-supported
 Responses features. Do not assume Azure deployment clients and `OpenAI` clients
 use interchangeable base URLs.
 
-After verification, a client construction scaffold can use the provider from the
-access reference. This is not a request and deliberately has an unresolved base:
+After access approval, a DEV client can use the provider from the access
+reference. Configure the variables, then enable this construction scaffold;
+it does not make a request:
 
 ```python
 from collections.abc import Callable
 from openai import OpenAI
 
-# Resolve this only from the verified gateway SDK configuration.
-verified_openai_sdk_base: str
 token_provider: Callable[[], str]  # Use the access reference's provider.
 metadata_headers: dict[str, str]  # Team, workload, and app key if applicable.
 
-# Do not construct or use a client until the variables above are configured.
+# OpenAI 3.35.1 is tested with this callable hook.
+# Configure the provider and headers before constructing the client.
 # client = OpenAI(
-#     base_url=verified_openai_sdk_base,
+#     base_url="https://azapimdev.worldbank.org/maifactory/openai/",
 #     api_key=token_provider,
 #     default_headers=metadata_headers,
 #     timeout=30,
@@ -95,14 +101,26 @@ metadata_headers: dict[str, str]  # Team, workload, and app key if applicable.
 # )
 ```
 
-Do not add a saved bearer to `default_headers`. Let the verified credential hook
-obtain a fresh bearer for each request. Some SDK versions do not accept a callable
-in `api_key`; verify support or use the documented refresh hook. Do not replace it
-with `token_provider()` evaluated once when the client starts.
+The trailing slash is required. The SDK appends `responses`; raw HTTP uses
+`POST /maifactory/openai/responses`, with the model in JSON. Do not use
+`AzureOpenAI` deployment chat or `client.chat.completions.create` for this target.
+
+For the tested OpenAI 3.35.1 hook, the callable returns the actual `get_token`
+string per request. It is a local wrapper, not `DesktopToken.token_provider`.
+Do not add a saved bearer to `default_headers`. For a client that captures a
+string, refresh and rebuild before expiry at about one hour. Do not assume
+that every OpenAI or LangChain release supports this callable.
 
 For Responses, verify `model`, `input`, instruction handling, output-token controls,
 structured output, storage controls, and allowed built-in tools. Generate the
 request from the verified schema, not from a Chat Completions example.
+
+Map system/user text to `instructions` and `input`, and use
+`max_output_tokens` only on a model that supports it. Omit `temperature` on
+GPT-5 models. Add `reasoning` only when supported; do not add it to every model.
+Prefer non-empty `output_text`; if empty, walk text in
+`output[].content[].text` without assuming a fixed output index. Handle no text,
+tool calls, refusals, and incomplete states without dumping the raw response.
 
 - Read structured output items as well as text. A text convenience property can
   omit tool calls, citations, refusals, or incomplete-output details.
@@ -166,25 +184,53 @@ deployment route and the newer root embedding route must not be combined.
 6. Bound concurrency and batch size. Log counts, sizes, and status, not source
    text, vectors, or full payloads.
 
-## Gemini Native and Legacy
+## Gemini Native Generation
 
-The newer guide names **Generate Content** on the discovery path above. The
-legacy guide names **Interactions**, an OpenAI-compatible route, and an older
-App Service route. This conflict requires current intranet schema verification.
+Use native Generate Content at either canonical Gemini route in the table.
+Both use native `contents` containing `parts`, optional `systemInstruction`,
+and `generationConfig`, not OpenAI `input` or legacy chat `messages`.
+
+For `google-genai`, configure `types.HttpOptions` with:
+
+```python
+from google import genai
+from google.genai import types
+
+# Use the configured provider and metadata from the local access reference.
+access_token = token_provider()
+client = genai.Client(
+    api_key=access_token,
+    http_options=types.HttpOptions(
+        base_url="https://azapimdev.worldbank.org/maifactory/gemini",
+        api_version="",
+        headers={**metadata_headers, "Authorization": f"Bearer {access_token}"},
+    ),
+)
+```
+
+Set the bearer string in both client `api_key` and the `Authorization` header.
+Always include actual `x-source-type` and approved team attribution. An empty
+`api_version` is required to prevent the SDK inserting `/v1beta/` and causing
+an APIM 404. Rebuild the client after token refresh at about one hour.
 
 - For a verified native Generate Content route, use its documented `contents`,
   parts, generation settings, safety settings, tool declarations, and candidates.
-  Exact field spelling and nesting must come from current mAI docs.
+  Preserve existing generation settings under `generationConfig`; for example,
+  `max_tokens` maps to `maxOutputTokens`. Verify model-specific support.
 - Do not send Responses-style `input` and `instructions` to a native route on
   the assumption that the gateway translates them.
-- For `google.genai`, verify base URL, API version, model-path handling,
-  credential/header refresh, and request serialization. Do not append an assumed
-  provider suffix to the gateway path.
+- Extract text from `candidates[].content.parts[].text` or the SDK `.text`
+  property. Handle safety blocks, empty candidates, and non-text parts safely.
+- Do not use `aiplatform.googleapis.com` or GCP ADC as an APIM workaround.
 - Do not switch to `client.interactions.create` because an old example uses it.
   Migrate legacy clients only after the current target contract is verified.
-- Grounding with Google Search replaces the standalone search endpoint in the
-  newer guide. Verify the supported tool schema, model, and grounding metadata;
-  do not substitute OpenAI search tool names.
+- Grounding with Google Search is a separate contract. The supplied migration
+  reference identifies an Interactions path for existing grounding clients;
+  verify its exact route, tool schema, model, metadata, and citations. Do not
+  switch generation to Interactions or assume grounding on a native/chat route.
+- Only if files were already uploaded, verify the existing DEV/QA helpers under
+  `/maifactory/gemini/gcs/uploads`. Use `gs://` URIs in native `fileData.fileUri`,
+  not HTTPS file URIs or OpenAI `input_file` blocks. Do not add an upload workflow.
 - Verify any model-listing route before use. A failed undocumented `GET /models`
   is not evidence that inference access is unavailable.
 
@@ -196,6 +242,10 @@ Verify the inference profile, permitted US regions, data handling, and account
 policy with the platform. Do not use `global.` or an unprefixed replacement when
 US routing is required. Do not claim a prefix alone guarantees compliance.
 
+Use raw HTTP, such as `requests`, for
+`POST /maifactory/bedrock/model/{model_id}/converse`. Keep the caller's approved
+model ID in the path. Do not use boto3/botocore SigV4 through APIM.
+
 Keep these two protocols separate:
 
 | Protocol | Schema family to confirm | Typical response family |
@@ -203,9 +253,11 @@ Keep these two protocols separate:
 | Bedrock Converse | `messages` with content blocks such as `{"text": "..."}`, `system` blocks, `inferenceConfig`, optional `toolConfig` | `output.message.content`, `stopReason`, `usage` |
 | Anthropic native / InvokeModel | `anthropic_version`, `max_tokens`, content blocks with `type` | Native `content` and native stop/usage fields |
 
-These field families are comparison data, not sendable requests. Verify exact
-schemas. Never send an Anthropic native body and then parse a Converse response,
-as the legacy guide does. A `/converse` discovery path is not permission to guess.
+For this migration, use Converse `messages[].content[].text`, `system` text
+blocks, and `inferenceConfig.maxTokens`. Do not send `anthropic_version`, native
+`max_tokens`, or typed Anthropic text blocks to Converse. Parse
+`output.message.content[].text` and camelCase usage fields such as `inputTokens`
+and `outputTokens`. Verify model-specific tools and other optional features.
 
 For Converse tools, verify `toolUse`/`toolResult` blocks and stop reasons. For
 Converse streaming, verify the gateway's event transport rather than assuming
@@ -218,6 +270,11 @@ Deliver environment/access assumptions, the verified source, dependency setup,
 safe credential configuration, the smallest complete example allowed by the
 verified schema, and offline tests. Test request serialization and response
 parsing with synthetic fixtures before approved live tests.
+
+For the first approved migration smoke test, request only
+`Reply with the single word: pong`. Check HTTP 200 and extracted text starting
+with `pong`, case-insensitive. Do not treat an unrelated missing local module
+or data file as a migration regression, or change application logic to hide it.
 
 Check authentication refresh, required headers, malformed requests, incomplete
 output, tool denial, stream cancellation, and rate-limit behavior. Retry only
@@ -232,7 +289,10 @@ needs independent review before official use.
 ## Sources
 
 - Historical sources (not bundled): `mai-factory-builder.md` and
-  `mai-factory-builder.agent.md`. Their routes, catalogs, and code conflict.
+  `mai-factory-builder.agent.md`. The supplied endpoint migration guide and
+  auth/OpenAI/Gemini/Bedrock references take priority for this transport update.
+  Local source inputs are not distributed; never copy credentials, personal
+  data, source cells, or outputs from the supplied notebook export.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

@@ -36,7 +36,7 @@ host-relative and must not be concatenated with another copy of their prefix.
 | Source hint | Path | Required verification |
 | --- | --- | --- |
 | Newer guide, batch base | `/maifactory/openai` | Current SDK base, files and batches routes |
-| Legacy guide | `/conversationalai/v2/openai/v1/batches` | Whether this historical route still exists |
+| Retired legacy guide example | `/conversationalai/v2/openai/v1/batches` | Not a migration target; obtain the current files/batches contract |
 | Possible per-record target | `/v1/responses` | Whether this batch service accepts Responses |
 | Possible per-record target | `/v1/chat/completions` | Whether this batch service accepts Chat Completions |
 
@@ -46,6 +46,18 @@ The newer foundation bases are
 `https://azapim.worldbank.org/maifactory`. Select the matching scope from the
 access reference. Do not combine the newer base with a legacy files/batches
 suffix or assume what an SDK appends.
+
+The supplied migration guide resolves synchronous OpenAI Responses to root
+`/maifactory/openai/`, with a trailing slash for the SDK. It does not establish
+batch support for every synchronous operation or resolve batch retention and
+per-record endpoint rules. Do not infer those from the synchronous route.
+Preserve models, prompts, and business logic during transport migration.
+
+Desktop acquisition uses WAM and `DesktopToken().get_token(env="DEV")`, `QA`,
+or `PROD`, as described in the local access reference. No retired `_DESKTOP`
+names or device-code fallback. Application client credentials/scopes/APIM,
+Connect OAuth, and Databricks managed identity do not change. A scheduled
+unattended worker must not depend on a personal Desktop bearer.
 
 ## JSONL Contract
 
@@ -194,6 +206,10 @@ approved VPN/network routes, permissions, and data controls enabled.
 
 - Historical sources (not bundled): `mai-factory-builder.md` and
   `mai-factory-builder.agent.md`. The legacy lifecycle has an endpoint mismatch.
+- The supplied endpoint migration guide and auth/OpenAI references resolve
+  Desktop acquisition and synchronous foundation routes, not the batch schema.
+  Local source inputs are not distributed. Never copy credentials, personal
+  data, source cells, or outputs from the supplied notebook export.
 - Access facts from the PIP guidelines: `mAI_factory_API_setup_prerequisities.qmd`,
   `mAI_factory_setup_access_request.qmd`, `mAI_factory_environment_setup.qmd`,
   and `mAI_integration.qmd`. They do not verify current API contracts.

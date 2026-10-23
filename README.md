@@ -147,6 +147,71 @@ Copy/adapt assets into the user's project; never store project secrets inside
 the installed skill package. The agent should inspect existing project files
 before making changes.
 
+## Desktop and Endpoint Migration
+
+The Desktop migration cutoff is **November 30, 2026**. Desktop Access has a
+**50 million token monthly limit**. Contact
+`itsai_platform_admin@worldbankgroup.org` for an extension. Use the approved
+current private `itsai-platform` SDK and complete Web Access Management (WAM)
+setup in platform documentation under **Desktop Access**. The supplied material
+does not specify
+an exact SDK release, supported OS list, or OS-specific WAM settings.
+
+For an existing uv project, configure protected authentication to the approved
+private index, then upgrade the locked SDK and synchronize the environment:
+
+```bash
+uv lock --upgrade-package itsai-platform
+uv sync
+```
+
+`uv add itsai-platform` remains the new-project step; it can retain an old
+version in an existing lock file. Check the installed release against current
+Desktop Access requirements before login.
+
+```python
+from itsai.platform.authentication import DesktopToken
+
+credential = DesktopToken()
+access_token = credential.get_token(env="DEV")  # QA or PROD when approved.
+```
+
+Keep the returned string in memory. Do not print or save it. `DEV`, `QA`, and
+`PROD` replace the retired Desktop environment names with a `_DESKTOP` suffix.
+Do not add a device-code, MSAL device flow, or `InteractiveBrowserCredential`
+fallback. Application client credentials and scopes, Posit Connect content
+OAuth, and Databricks workspace-managed identity do not change.
+
+| Provider | DEV target | Request contract |
+| --- | --- | --- |
+| OpenAI | `https://azapimdev.worldbank.org/maifactory/openai/` | SDK appends `responses`; model in JSON; use Responses input/output |
+| Gemini | `https://azapimdev.worldbank.org/maifactory/gemini` | `/responses/{model}` or `/models/{model}:generateContent`; native `contents` and `parts` |
+| Bedrock | `https://azapimdev.worldbank.org/maifactory/bedrock` | Raw HTTP `/model/{model_id}/converse`; Converse schema, not Anthropic Messages |
+
+Use the matching QA or PROD host only for approved work. Preserve existing
+models, prompts, and application logic. Remove `/conversationalai` only from
+retired foundation routes, not from health, DNR, tagging, translation, or TTS
+routes under `/conversationalai/platform`.
+
+Every request needs `Authorization` and the actual `x-source-type`. Use approved
+`x-team-name` attribution per onboarding; the starters require a team name.
+Application Access still needs its APIM subscription key. For `google-genai`,
+set `api_version=""` and supply the bearer in both `api_key` and `Authorization`.
+Grounding/Interactions needs separate verification, not a native generation swap.
+
+Tokens last about one hour. Rebuild clients that captured a token string after
+refresh, including Gemini. The tested OpenAI 3.35.1 client supports an `api_key`
+callable: the Python starter uses an in-memory wrapper that returns the actual
+`get_token` string per request. This is not a `DesktopToken.token_provider`
+method. Raw HTTP obtains a fresh provider result before each request.
+
+Omit `temperature` on GPT-5 models and use output-token or reasoning controls
+only when supported. OpenAI `output_text` can be empty; the starters also read
+text from structured `output` content. Test serialization and extraction offline
+first, then make an approved public-sample smoke test that requests `pong`.
+Check HTTP 200 and extracted text starting with `pong`, case-insensitive.
+No live login or model access was verified by this repository update.
+
 ## Security and Source Rules
 
 - A Desktop bearer token, APIM subscription key, Azure client secret, and JFrog
@@ -158,17 +223,20 @@ before making changes.
   An ignored file is not automatically hidden from a coding agent.
 - Use only approved Bank endpoints and data. Do not fall back to a public
   provider, disable TLS, or bypass network/permission controls.
-- The supplied sources disagree on some API routes and payloads. The skills
-  make these conflicts explicit and require current documentation before
-  generating invocation code. They can still prepare and test offline setup.
+- The migration guide resolves the old foundation roots and Desktop environment
+  names. Other service schemas, models, supported features, and entitlements
+  still need current documentation. Offline setup can proceed without access.
 - Model names, quotas, prices, SDK features, and permissions can change. Check
   the current catalog and documentation. Independently verify AI output.
 - The third-party Skills CLI has telemetry and security-audit behavior. Review
   its policy before use. Its documented opt-outs are `DISABLE_TELEMETRY=1` or
   `DO_NOT_TRACK=1`, set in the user's environment.
 
-See [SOURCES.md](SOURCES.md) for the historical source inventory and conflict
-decisions. The original source documents are not stored in this repository.
+See [SOURCES.md](SOURCES.md) for the complete source inventory and authority
+decisions. Migration inputs are local ignored files under `reference/`; they
+are not tracked or distributed with the skills, npm package, or website. The
+supplied notebook export includes unsafe credential-like material. Do not copy
+its credentials, personal data, source cells, or outputs into project files.
 
 ## Updates and Removal
 

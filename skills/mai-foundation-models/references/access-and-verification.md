@@ -11,7 +11,7 @@ for secrets. Posit Connect content OAuth has the exception described below.
 
 | Access | Required setup |
 | --- | --- |
-| Desktop | Approved user access; private `itsai-platform` package; browser sign-in; approved WB network/VPN |
+| Desktop | Approved user access; current private `itsai-platform`; WAM setup; approved network |
 | Application | App registration and grant; tenant ID, client ID, client secret, environment scope, APIM subscription key; approved ACN/network path |
 | Databricks | Data Lab onboarding; approved workspace/cluster; provisioned endpoint and workspace credential flow |
 | Posit Connect R/Shiny | Approved content OAuth integration and audience; no Desktop onboarding for this flow |
@@ -26,9 +26,9 @@ for secrets. Posit Connect content OAuth has the exception described below.
 - Application Access to QA/PROD needs the approved ACN registration and grants.
   DEV is for tests; use QA before PROD. Confirm the network path for each runtime.
 
-Desktop SDK source guidance requires Python 3.12 or earlier; it does not give a
-minimum. Python 3.12 is a conservative project choice until current private SDK
-metadata confirms compatibility. Outside DC, the PIP guide requires VPN US East.
+Older Desktop guidance used Python 3.12 or earlier. Confirm current SDK/runtime
+and OS support in platform **Desktop Access** documentation; no exact SDK
+release or supported OS list was supplied. Outside DC, the PIP guide uses VPN US East.
 Inside DC on `bluemarlin`, connected GlobalProtect is sufficient. Confirm current
 network policy; do not bypass it. The guides do not guarantee a token-cache
 format or location.
@@ -55,6 +55,22 @@ bearer or an `Ocp-Apim-Subscription-Key`. Do not send it to mAI or assume the
 integration GUID is an mAI scope. Keep these values in approved secret storage.
 The Python scaffold below is for Desktop/Application, not this Connect flow.
 
+## Desktop WAM Migration
+
+Complete Web Access Management (WAM) setup from **Desktop Access** documentation and upgrade
+the private SDK through the approved index. Use
+`DesktopToken().get_token(env="DEV")`, `QA`, or `PROD`. The returned value is a
+string, not a token-provider object. Do not call `DesktopToken.token_provider`
+or add device-code, MSAL device flow, or InteractiveBrowserCredential fallback.
+The final cutoff is **November 30, 2026**. Desktop Access has a **50 million
+token monthly limit**; request extensions from
+`itsai_platform_admin@worldbankgroup.org`.
+
+Tokens last about one hour. Rebuild clients that captured a token string after
+refresh. The tested OpenAI 3.35.1 supports a callable wrapper around `get_token`
+per request; do not assume that every SDK does. Gemini captures both `api_key`
+and Authorization. Application, Connect, and Databricks identity do not change.
+
 ## Environment Coupling
 
 Reference values from the newer guide; confirm current configuration at setup.
@@ -63,12 +79,12 @@ override or mix a token from one environment with another environment's host.
 
 | Env | Host | OAuth scope | Desktop environment |
 | --- | --- | --- | --- |
-| DEV | `https://azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV_DESKTOP` |
-| QA | `https://azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA_DESKTOP` |
-| PROD | `https://azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD_DESKTOP` |
+| DEV | `https://azapimdev.worldbank.org` | `a1dd6401-acf2-43b5-a37c-c3230ef1be7d/.default` | `DEV` |
+| QA | `https://azapimqa.worldbank.org` | `c626bd72-9ef7-4efe-9176-5c75800f7670/.default` | `QA` |
+| PROD | `https://azapim.worldbank.org` | `0b3b356c-4b5f-4d5b-97ad-c99343ad5557/.default` | `PROD` |
 
-The source checklist also says `DEV`; this conflicts with its DesktopToken
-example. Check the installed SDK's accepted values. Do not silently try both.
+The migration guide resolves the old conflict. Names with `_DESKTOP` suffixes
+are retired; do not silently retry them. Application scopes remain unchanged.
 
 ## Install and Configure
 
@@ -84,6 +100,17 @@ uv add itsai-platform
 # Application, instead of the desktop package:
 uv add azure-identity
 ```
+
+For an existing uv project, `uv add` can retain an old lock. After protected
+private-index authentication is configured, run:
+
+```bash
+uv lock --upgrade-package itsai-platform
+uv sync
+```
+
+Check the installed version against current Desktop Access requirements. Do
+not copy credential-bearing installation cells or outputs from a notebook.
 
 Install only the client libraries needed by the verified integration. For
 example, `openai`, `langchain-openai`, `google-genai`, or `requests`. Check SDK
@@ -122,7 +149,7 @@ if access == "desktop":
     credential = DesktopToken()
 
     def token_provider() -> str:
-        return credential.get_token(env=f"{env}_DESKTOP")
+        return credential.get_token(env=env)
 elif access == "application":
     from azure.identity import ClientSecretCredential, get_bearer_token_provider
 
@@ -150,9 +177,10 @@ def fresh_headers(*, json_body: bool = True) -> dict[str, str]:
 
 Call `fresh_headers()` immediately before each verified raw HTTP request. For
 multipart uploads use `fresh_headers(json_body=False)` and let the client set the
-boundary. With an SDK, pass the callable to its verified credential hook and
-pass only metadata as static headers. Never cache a bearer at client startup.
-The provider may use its own safe token cache and refresh before expiry.
+boundary. OpenAI 3.35.1 can receive this callable and static metadata headers.
+For another SDK, verify its hook or rebuild the client after refreshing a
+captured token. The private provider may cache internally; its cache format
+and location are not documented here.
 
 `x-source-type` describes the actual workload, not the login method: interactive
 user work uses `interactive`; scheduled or background work uses `job`. Include
